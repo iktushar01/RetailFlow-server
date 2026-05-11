@@ -21,42 +21,55 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// MongoDB setup
-const client = new MongoClient(process.env.MONGODB_URI, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+if (!process.env.MONGODB_URI) {
+  console.error("Missing required environment variable: MONGODB_URI");
+  app.use((req, res, next) => {
+    if (req.path === "/") {
+      return next();
+    }
 
-const database = client.db("POS_System_DB");
-const collections = {
-  supplierCollaction: database.collection("suppliers"),
-  productCollection: database.collection("products"),
-  purchaseOrderCollection: database.collection("purchaseOrders"),
-  grnCollection: database.collection("grn"),
-  inventoryCollection: database.collection("inventory"),
-  paymentsCollection: database.collection("payments"),
-  warehouseCollection: database.collection("warehouses"),
-  batchCollection: database.collection("batches"),
-  stockTransferCollection: database.collection("stockTransfers"),
-};
+    return res.status(500).send({
+      message: "Server configuration error: MONGODB_URI is not set",
+    });
+  });
+} else {
+  // MongoDB setup
+  const client = new MongoClient(process.env.MONGODB_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    },
+  });
 
-const routeContext = { collections, ObjectId };
+  const database = client.db("POS_System_DB");
+  const collections = {
+    supplierCollaction: database.collection("suppliers"),
+    productCollection: database.collection("products"),
+    purchaseOrderCollection: database.collection("purchaseOrders"),
+    grnCollection: database.collection("grn"),
+    inventoryCollection: database.collection("inventory"),
+    paymentsCollection: database.collection("payments"),
+    warehouseCollection: database.collection("warehouses"),
+    batchCollection: database.collection("batches"),
+    stockTransferCollection: database.collection("stockTransfers"),
+  };
 
-registerSupplierRoutes(app, routeContext);
-registerProductRoutes(app, routeContext);
-registerPurchaseOrderRoutes(app, routeContext);
-registerGrnRoutes(app, routeContext);
-registerInventoryRoutes(app, routeContext);
-registerPaymentRoutes(app, routeContext);
-registerWarehouseRoutes(app, routeContext);
-registerBatchRoutes(app, routeContext);
-registerBarcodeRoutes(app, routeContext);
-registerStockTransferRoutes(app, routeContext);
+  const routeContext = { collections, ObjectId };
 
-console.log("MongoDB routes registered successfully!");
+  registerSupplierRoutes(app, routeContext);
+  registerProductRoutes(app, routeContext);
+  registerPurchaseOrderRoutes(app, routeContext);
+  registerGrnRoutes(app, routeContext);
+  registerInventoryRoutes(app, routeContext);
+  registerPaymentRoutes(app, routeContext);
+  registerWarehouseRoutes(app, routeContext);
+  registerBatchRoutes(app, routeContext);
+  registerBarcodeRoutes(app, routeContext);
+  registerStockTransferRoutes(app, routeContext);
+
+  console.log("MongoDB routes registered successfully!");
+}
 
 // Default route
 app.get("/", (req, res) => {
